@@ -10,6 +10,7 @@ import org.lwjgl.system.*;
 
 import java.nio.*;
 
+import static org.example.fastmath.FastTrig.*;
 import static org.lwjgl.glfw.Callbacks.*;
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
@@ -17,6 +18,8 @@ import static org.lwjgl.system.MemoryStack.*;
 import static org.lwjgl.system.MemoryUtil.*;
 
 public class App {
+
+    public static final float[] COLOR_YELLOW = new float[]{ 1.0f, 1.0f, 0.0f };
 
     // The window handle
     private long window;
@@ -47,11 +50,12 @@ public class App {
 
         // Configure GLFW
         glfwDefaultWindowHints(); // optional, the current window hints are already the default
+        GLFW.glfwWindowHint(GLFW_SAMPLES, 4);  // multisampling
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE); // the window will stay hidden after creation
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE); // the window will be resizable
 
         // Create the window
-        window = glfwCreateWindow(300, 300, "Hello World!", NULL, NULL);
+        window = glfwCreateWindow(1920/2, 1080/2, "TestGame", NULL, NULL);
         if ( window == NULL )
             throw new RuntimeException("Failed to create the GLFW window");
 
@@ -74,9 +78,9 @@ public class App {
 
             // Center the window
             glfwSetWindowPos(
-                    window,
-                    (vidmode.width() - pWidth.get(0)) / 2,
-                    (vidmode.height() - pHeight.get(0)) / 2
+                window,
+                (vidmode.width() - pWidth.get(0)) / 2,
+                (vidmode.height() - pHeight.get(0)) / 2
             );
         } // the stack frame is popped automatically
 
@@ -87,9 +91,10 @@ public class App {
 
         // Make the window visible
         glfwShowWindow(window);
-    }
 
-    private void loop() {
+        // Make the window the focused window (bring to front)
+        glfwFocusWindow(window);
+
         // This line is critical for LWJGL's interoperation with GLFW's
         // OpenGL context, or any context that is managed externally.
         // LWJGL detects the context that is current in the current thread,
@@ -97,13 +102,34 @@ public class App {
         // bindings available for use.
         GL.createCapabilities();
 
+        // Set the OpenGL viewport to be fixed size
+        GL11.glViewport(0, 0, 512, 512);
+
+        // Set a resize callback to avoid stretching
+        GLFW.glfwSetFramebufferSizeCallback(window, (window, width, height) -> {
+            // Do nothing here to prevent changing the viewport size
+            // The size is fixed to the initial resolution
+        });
+
         // Set the clear color
-        glClearColor(1.0f, 0.0f, 0.0f, 0.0f);
+        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    }
+
+    private void loop() {
 
         // Run the rendering loop until the user has attempted to close
         // the window or has pressed the ESCAPE key.
         while ( !glfwWindowShouldClose(window) ) {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the framebuffer
+
+            glColor3fv(COLOR_YELLOW);
+            glBegin(GL_POLYGON);
+            float r = 0.1f;
+            int pts = 12;
+            for(int i = 0; i < pts; i++) {
+                glVertex2f(r * fastSin(TWO_PI * i / pts), r * fastCos(TWO_PI * i / pts));
+            }
+            glEnd();
 
             glfwSwapBuffers(window); // swap the color buffers
 
