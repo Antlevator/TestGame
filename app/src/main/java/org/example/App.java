@@ -3,6 +3,7 @@
  */
 package org.example;
 
+import org.example.util.TextureUtil;
 import org.lwjgl.*;
 import org.lwjgl.glfw.*;
 import org.lwjgl.opengl.*;
@@ -10,7 +11,7 @@ import org.lwjgl.system.*;
 
 import java.nio.*;
 
-import static org.example.fastmath.FastTrig.*;
+import static org.example.util.FastTrig.*;
 import static org.lwjgl.glfw.Callbacks.*;
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
@@ -23,6 +24,7 @@ public class App {
 
     // The window handle
     private long window;
+    private int spritesheetID;
 
     public void run() {
         System.out.println("Hello LWJGL " + Version.getVersion() + "!");
@@ -113,6 +115,8 @@ public class App {
 
         // Set the clear color
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+
+        spritesheetID = TextureUtil.loadTexture("/face.png");
     }
 
     private void loop() {
@@ -122,14 +126,7 @@ public class App {
         while ( !glfwWindowShouldClose(window) ) {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the framebuffer
 
-            glColor3fv(COLOR_YELLOW);
-            glBegin(GL_POLYGON);
-            float r = 0.1f;
-            int pts = 12;
-            for(int i = 0; i < pts; i++) {
-                glVertex2f(r * fastSin(TWO_PI * i / pts), r * fastCos(TWO_PI * i / pts));
-            }
-            glEnd();
+            draw();
 
             glfwSwapBuffers(window); // swap the color buffers
 
@@ -137,6 +134,27 @@ public class App {
             // invoked during this call.
             glfwPollEvents();
         }
+    }
+
+    private void draw() {
+//        glColor3fv(COLOR_YELLOW);
+//        glBegin(GL_POLYGON);
+//        float r = 0.1f;
+//        int pts = 12;
+//        for(int i = 0; i < pts; i++) {
+//            glVertex2f(r * fastSin(TWO_PI * i / pts), r * fastCos(TWO_PI * i / pts));
+//        }
+//        glEnd();
+
+        // render image
+        glBindTexture(GL_TEXTURE_2D, spritesheetID);
+        glBegin(GL_QUADS);
+        glTexCoord2f(0, 0); glVertex2f(-0.5f, -0.5f);
+        glTexCoord2f(1, 0); glVertex2f( 0.5f, -0.5f);
+        glTexCoord2f(1, 1); glVertex2f( 0.5f,  0.5f);
+        glTexCoord2f(0, 1); glVertex2f(-0.5f,  0.5f);
+        glEnd();
+
     }
 
     public static void main(String[] args) {

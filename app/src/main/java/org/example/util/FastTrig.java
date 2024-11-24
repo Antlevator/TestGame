@@ -1,4 +1,4 @@
-package org.example.fastmath;
+package org.example.util;
 
 public class FastTrig {
 
