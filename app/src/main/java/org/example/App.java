@@ -11,7 +11,6 @@ import org.lwjgl.system.*;
 
 import java.nio.*;
 
-import static org.example.util.FastTrig.*;
 import static org.lwjgl.glfw.Callbacks.*;
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
@@ -47,14 +46,21 @@ public class App {
         GLFWErrorCallback.createPrint(System.err).set();
 
         // Initialize GLFW. Most GLFW functions will not work before doing this.
-        if ( !glfwInit() )
+        if (!glfwInit()) {
             throw new IllegalStateException("Unable to initialize GLFW");
+        }
+        // tell GLFW to use OpenGL v3.3 in core (strictly modern) mode
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
         // Configure GLFW
+
         glfwDefaultWindowHints(); // optional, the current window hints are already the default
+        // smooth out edges
         GLFW.glfwWindowHint(GLFW_SAMPLES, 4);  // multisampling
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE); // the window will stay hidden after creation
-        glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE); // the window will be resizable
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE); // the window will be resizable
 
         // Create the window
         window = glfwCreateWindow(1920/2, 1080/2, "TestGame", NULL, NULL);
@@ -104,19 +110,26 @@ public class App {
         // bindings available for use.
         GL.createCapabilities();
 
-        // Set the OpenGL viewport to be fixed size
-        GL11.glViewport(0, 0, 512, 512);
+        GLFWFramebufferSizeCallbackI setViewportAndOrtho = new GLFWFramebufferSizeCallbackI() {
+            @Override
+            public void invoke(long window, int width, int height) {
+                GL11.glViewport(0, 0, width, height);
+            }
+        };
 
-        // Set a resize callback to avoid stretching
-        GLFW.glfwSetFramebufferSizeCallback(window, (window, width, height) -> {
-            // Do nothing here to prevent changing the viewport size
-            // The size is fixed to the initial resolution
-        });
+        setViewportAndOrtho.invoke(window, 1920/2, 1080/2);
+
+        // Set a resize callback to avoid stretching (seems unnecessary)
+        GLFW.glfwSetFramebufferSizeCallback(window, setViewportAndOrtho);
 
         // Set the clear color
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
         spritesheetID = TextureUtil.loadTexture("/face.png");
+
+        glEnable(GL_TEXTURE_2D); // enable images to be rendered, otherwise they appear as white boxes
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); // stop image "magnification" (blending)
+
     }
 
     private void loop() {
@@ -137,22 +150,27 @@ public class App {
     }
 
     private void draw() {
-//        glColor3fv(COLOR_YELLOW);
-//        glBegin(GL_POLYGON);
-//        float r = 0.1f;
-//        int pts = 12;
-//        for(int i = 0; i < pts; i++) {
-//            glVertex2f(r * fastSin(TWO_PI * i / pts), r * fastCos(TWO_PI * i / pts));
-//        }
-//        glEnd();
 
-        // render image
+        int vertexCount = 4;
+        float[] vertices = {
+            -1.0f, -1.0f,
+            -1.0f,  1.0f,
+             1.0f,  1.0f,
+             1.0f, -1.0f,
+        };
+        float[] texCoords = {
+            0, 0,
+            0, 1,
+            1, 1,
+            1, 0,
+        };
+
         glBindTexture(GL_TEXTURE_2D, spritesheetID);
         glBegin(GL_QUADS);
-        glTexCoord2f(0, 0); glVertex2f(-0.5f, -0.5f);
-        glTexCoord2f(1, 0); glVertex2f( 0.5f, -0.5f);
-        glTexCoord2f(1, 1); glVertex2f( 0.5f,  0.5f);
-        glTexCoord2f(0, 1); glVertex2f(-0.5f,  0.5f);
+        for(int i = 0; i < vertexCount; i++) {
+            glTexCoord2f(texCoords[i*2], texCoords[i*2+1]);
+            glVertex2f(vertices[i*2], vertices[i*2+1]);
+        }
         glEnd();
 
     }
