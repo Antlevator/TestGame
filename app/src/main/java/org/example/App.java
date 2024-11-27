@@ -4,6 +4,7 @@
 package org.example;
 
 import org.example.util.TextureUtil;
+import org.example.util.ShaderUtil;
 import org.lwjgl.*;
 import org.lwjgl.glfw.*;
 import org.lwjgl.opengl.*;
@@ -21,6 +22,9 @@ public class App {
 
     // The window handle
     private long window;
+
+    private int vao;
+    private int indicesLength = 6;
 
     public void run() {
         System.out.println("Hello LWJGL " + Version.getVersion() + "!");
@@ -110,6 +114,49 @@ public class App {
         // Set the clear color
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
+        int shaderProgramId = ShaderUtil.createShaderProgram(
+            "/shaders/vertex/default.glsl",
+            "/shaders/fragment/default.glsl"
+        );
+        GL20.glUseProgram(shaderProgramId);
+
+        vao = initVao();
+    }
+
+    private int initVao() {
+        float[] vertices = {
+                0.5f,  0.5f, 0.0f,  1.0f, 0.0f, 0.0f,
+                0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,
+                -0.5f, -0.5f, 0.0f,  0.0f, 0.0f, 1.0f,
+                -0.5f,  0.5f, 0.0f,  1.0f, 1.0f, 0.0f
+        };
+
+        int[] indices = {
+                0, 1, 3,
+                1, 2, 3
+        };
+
+        int vao = GL30.glGenVertexArrays();
+        GL30.glBindVertexArray(vao);
+
+        int vbo = GL15.glGenBuffers();
+        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
+        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, vertices, GL15.GL_STATIC_DRAW);
+
+        int ebo = GL15.glGenBuffers();
+        GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ebo);
+        GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, indices, GL15.GL_STATIC_DRAW);
+
+        int stride = 6 * Float.BYTES;
+        GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, stride, 0);
+        GL20.glEnableVertexAttribArray(0);
+
+        GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, stride, 3 * Float.BYTES);
+        GL20.glEnableVertexAttribArray(1);
+
+        GL30.glBindVertexArray(0);
+
+        return vao;
     }
 
     private void loop() {
@@ -130,28 +177,10 @@ public class App {
     }
 
     private void draw() {
-
-        float[] vertices = {
-             0.0f,  0.5f,  0.0f,
-            -0.5f, -0.5f,  0.0f,
-             0.5f, -0.5f,  0.0f
-        };
-
-        int bufferId = glGenBuffers();
-        glBindBuffer(GL_ARRAY_BUFFER, bufferId);
-        FloatBuffer vertexBuffer = BufferUtils.createFloatBuffer(vertices.length);
-        vertexBuffer.put(vertices).flip();
-        glBufferData(GL_ARRAY_BUFFER, vertexBuffer, GL_STATIC_DRAW);
-
-        GL20.glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
-        GL20.glEnableVertexAttribArray(0);
-
-        glDrawArrays(GL_TRIANGLES, 0, vertices.length / 3);
-
-        GL20.glDisableVertexAttribArray(0);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-        glDeleteBuffers(bufferId);
+        // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        GL30.glBindVertexArray(vao);
+        GL11.glDrawElements(GL11.GL_TRIANGLES, indicesLength, GL11.GL_UNSIGNED_INT, 0);
+        GL30.glBindVertexArray(0);
     }
 
     public static void main(String[] args) {
