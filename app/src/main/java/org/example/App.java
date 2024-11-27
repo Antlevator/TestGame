@@ -13,17 +13,14 @@ import java.nio.*;
 
 import static org.lwjgl.glfw.Callbacks.*;
 import static org.lwjgl.glfw.GLFW.*;
-import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.system.MemoryStack.*;
 import static org.lwjgl.system.MemoryUtil.*;
 
 public class App {
 
-    public static final float[] COLOR_YELLOW = new float[]{ 1.0f, 1.0f, 0.0f };
-
     // The window handle
     private long window;
-    private int spritesheetID;
 
     public void run() {
         System.out.println("Hello LWJGL " + Version.getVersion() + "!");
@@ -58,7 +55,7 @@ public class App {
 
         glfwDefaultWindowHints(); // optional, the current window hints are already the default
         // smooth out edges
-        GLFW.glfwWindowHint(GLFW_SAMPLES, 4);  // multisampling
+        //GLFW.glfwWindowHint(GLFW_SAMPLES, 4);  // multisampling
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE); // the window will stay hidden after creation
         glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE); // the window will be resizable
 
@@ -110,25 +107,8 @@ public class App {
         // bindings available for use.
         GL.createCapabilities();
 
-        GLFWFramebufferSizeCallbackI setViewportAndOrtho = new GLFWFramebufferSizeCallbackI() {
-            @Override
-            public void invoke(long window, int width, int height) {
-                GL11.glViewport(0, 0, width, height);
-            }
-        };
-
-        setViewportAndOrtho.invoke(window, 1920/2, 1080/2);
-
-        // Set a resize callback to avoid stretching (seems unnecessary)
-        GLFW.glfwSetFramebufferSizeCallback(window, setViewportAndOrtho);
-
         // Set the clear color
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-
-        spritesheetID = TextureUtil.loadTexture("/face.png");
-
-        glEnable(GL_TEXTURE_2D); // enable images to be rendered, otherwise they appear as white boxes
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); // stop image "magnification" (blending)
 
     }
 
@@ -151,28 +131,27 @@ public class App {
 
     private void draw() {
 
-        int vertexCount = 4;
         float[] vertices = {
-            -1.0f, -1.0f,
-            -1.0f,  1.0f,
-             1.0f,  1.0f,
-             1.0f, -1.0f,
-        };
-        float[] texCoords = {
-            0, 0,
-            0, 1,
-            1, 1,
-            1, 0,
+             0.0f,  0.5f,  0.0f,
+            -0.5f, -0.5f,  0.0f,
+             0.5f, -0.5f,  0.0f
         };
 
-        glBindTexture(GL_TEXTURE_2D, spritesheetID);
-        glBegin(GL_QUADS);
-        for(int i = 0; i < vertexCount; i++) {
-            glTexCoord2f(texCoords[i*2], texCoords[i*2+1]);
-            glVertex2f(vertices[i*2], vertices[i*2+1]);
-        }
-        glEnd();
+        int bufferId = glGenBuffers();
+        glBindBuffer(GL_ARRAY_BUFFER, bufferId);
+        FloatBuffer vertexBuffer = BufferUtils.createFloatBuffer(vertices.length);
+        vertexBuffer.put(vertices).flip();
+        glBufferData(GL_ARRAY_BUFFER, vertexBuffer, GL_STATIC_DRAW);
 
+        GL20.glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
+        GL20.glEnableVertexAttribArray(0);
+
+        glDrawArrays(GL_TRIANGLES, 0, vertices.length / 3);
+
+        GL20.glDisableVertexAttribArray(0);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+        glDeleteBuffers(bufferId);
     }
 
     public static void main(String[] args) {
